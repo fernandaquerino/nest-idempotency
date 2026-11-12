@@ -62,7 +62,8 @@
     "example": "npm run build && tsc -p examples/basic-app/tsconfig.json && node examples/basic-app/dist/main.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build && changeset publish"
+    "release": "npm run build && changeset publish",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0 || ^11.0.0",
