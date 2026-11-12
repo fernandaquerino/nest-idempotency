@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Check the packed tarball contents
+        run: npm pack --dry-run
+
+  test:
+    name: Test (Node ${{ matrix.node }}, Nest ${{ matrix.nest }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+        nest: [10, 11]
+    env:
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Install NestJS ${{ matrix.nest }}
+        run: >
+          npm install --no-save
+          @nestjs/common@${{ matrix.nest }}
+          @nestjs/core@${{ matrix.nest }}
+          @nestjs/testing@${{ matrix.nest }}
+          @nestjs/platform-express@${{ matrix.nest }}
+      - run: npm ls @nestjs/common @nestjs/core
+      - name: Start Redis
+        run: docker compose up -d --wait redis
+      - run: npm test
+      - name: Stop Redis
+        if: always()
+        run: docker compose down
