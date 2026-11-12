@@ -6,12 +6,16 @@
  * - `text`: a string returned by the handler.
  * - `binary`: a `Buffer` or typed array, stored as base64.
  * - `empty`: the handler returned `undefined`.
+ * - `exception`: the handler threw an `HttpException` with a `4xx` status; `value` is its
+ *   `getResponse()`. Replays throw an `HttpException` with this value and the stored status,
+ *   so exception filters format it the same way.
  */
 export type StoredBody =
   | { readonly type: 'json'; readonly value: unknown }
   | { readonly type: 'text'; readonly value: string }
   | { readonly type: 'binary'; readonly base64: string }
-  | { readonly type: 'empty' };
+  | { readonly type: 'empty' }
+  | { readonly type: 'exception'; readonly value: unknown };
 
 /** A response captured from the first execution of an idempotent handler. */
 export interface StoredResponse {

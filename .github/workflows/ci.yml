@@ -26,6 +26,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
+      - name: Run the e2e suite against the built bundle
+        run: TEST_DIST=1 npx vitest run test/e2e
       - name: Check the packed tarball contents
         run: npm pack --dry-run
 
