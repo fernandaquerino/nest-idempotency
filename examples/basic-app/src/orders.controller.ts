@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Header, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { Idempotent } from 'nest-idempotency';
-import { CreateOrderDto, OrdersService } from './orders.service';
+import type { CreateOrderDto } from './orders.service';
+import { OrdersService } from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
