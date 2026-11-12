@@ -1,6 +1,6 @@
 {
   "name": "nest-idempotency",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Idempotency-Key support for NestJS: make HTTP endpoints safe to retry, following the IETF Idempotency-Key HTTP header draft.",
   "keywords": [
     "nestjs",
