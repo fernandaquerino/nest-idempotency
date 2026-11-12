@@ -10,12 +10,15 @@ import {
   Res,
   Sse,
   StreamableFile,
+  UseInterceptors,
+  type CallHandler,
+  type NestInterceptor,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { Response } from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
-import { of } from 'rxjs';
+import { map, of } from 'rxjs';
 import {
   IDEMPOTENCY_MODULE_OPTIONS,
   Idempotent,
@@ -153,6 +156,36 @@ describe('module options', () => {
   it('rejects invalid @Idempotent() options', () => {
     expect(() => Idempotent({ ttlSeconds: 0 })).toThrow(IdempotencyConfigurationError);
     expect(() => Idempotent({ lockTimeoutSeconds: Number.NaN })).toThrow(/lockTimeoutSeconds/);
+  });
+});
+
+describe('interceptor ordering', () => {
+  it('runs an interceptor placed above @Idempotent() inside it, so replays skip it', async () => {
+    let runs = 0;
+    @Injectable()
+    class WrapInterceptor implements NestInterceptor {
+      intercept(_context: unknown, next: CallHandler) {
+        runs++;
+        return next.handle().pipe(map((value) => ({ wrapped: value })));
+      }
+    }
+    @Controller('wrapped')
+    class WrappedController {
+      @Post()
+      @UseInterceptors(WrapInterceptor)
+      @Idempotent()
+      create() {
+        return { ok: true };
+      }
+    }
+    const app = await start({ storage: new MemoryIdempotencyStorage() }, [WrappedController]);
+    const server = app.app.getHttpServer();
+    const first = await request(server).post('/wrapped').set('Idempotency-Key', 'k');
+    const second = await request(server).post('/wrapped').set('Idempotency-Key', 'k');
+    expect(first.body).toEqual({ wrapped: { ok: true } });
+    expect(second.body).toEqual(first.body);
+    expect(second.headers['idempotent-replayed']).toBe('true');
+    expect(runs).toBe(1);
   });
 });
 
